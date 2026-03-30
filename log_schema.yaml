@@ -1,0 +1,47 @@
+version: "1.0"
+description: "Hardware log schema for accel sensor verification"
+
+# ---------------------------------------------------------------------------
+# Shared prefix fragment.
+# Substituted verbatim wherever {log_prefix} appears in a channel pattern.
+# Named groups provided: datetime (str), seq_ts (str)
+# ---------------------------------------------------------------------------
+log_prefix: '(?:Line\s+\d+:\s+)?(?P<datetime>\d{2}/\d{2}/\d{4}\s+\d{2}:\d{2}:\d{2})\s+\(\d+\):\s+(?P<seq_ts>\d+:\d+)\s+'
+
+# ---------------------------------------------------------------------------
+# Channel definitions.
+# Each channel declares:
+#   name        – identifier used to access data in DataStore
+#   description – human-readable label shown on plots
+#   pattern     – full regex (use {log_prefix} to embed the shared prefix)
+#                 Named groups must match the field names listed below.
+#   fields      – ordered list of {name, type} for each named group.
+#                 Supported types: str | int8 | int16 | int32 | int64 | float32 | float64
+#
+# To add a new log type, append another entry here – no Python code changes needed.
+# ---------------------------------------------------------------------------
+channels:
+
+  - name: accel_raw
+    description: "Raw accel counts (SAE)"
+    # Matches:  accel: X=-304 Y=7856 Z=1456 (raw counts, SAE)
+    pattern: '{log_prefix}.+?accel:\s+X=(?P<x>-?\d+)\s+Y=(?P<y>-?\d+)\s+Z=(?P<z>-?\d+)\s+\(raw\s+counts'
+    fields:
+      - { name: datetime, type: str   }
+      - { name: seq_ts,   type: str   }
+      - { name: x,        type: int32 }
+      - { name: y,        type: int32 }
+      - { name: z,        type: int32 }
+
+  - name: accel_xyz
+    description: "Accel XYZ summary"
+    # Matches both:
+    #   accel XYZ: X=320 Y=0 Z=8144
+    #   XYZ: X=-184 Y=-836 Z=1844     (newer firmware, no "accel" prefix)
+    pattern: '{log_prefix}.+?(?:accel\s+)?XYZ:\s+X=(?P<x>-?\d+)\s+Y=(?P<y>-?\d+)\s+Z=(?P<z>-?\d+)'
+    fields:
+      - { name: datetime, type: str   }
+      - { name: seq_ts,   type: str   }
+      - { name: x,        type: int32 }
+      - { name: y,        type: int32 }
+      - { name: z,        type: int32 }
